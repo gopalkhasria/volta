@@ -56,11 +56,6 @@ export default defineComponent({
 
     const handleClick = (event: MouseEvent) => {
       if (isDisabled.value) return;
-
-      if (props.onClick) {
-        props.onClick(event);
-      }
-
       emit('click', event);
     };
 

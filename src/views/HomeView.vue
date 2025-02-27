@@ -1,16 +1,34 @@
 <template>
   This is home page
+  <ModalNotification
+      message="Operazione completata con successo!"
+      :isError="false"
+      :timeout="5000"
+      @close=""
+  />
+
 </template>
 
 <script lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore.ts'
 
-import MaterialInput from '../components/common/Input.vue';
+import ModalNotification from "@/components/common/Modal.vue";
 
 export default {
-  components: { MaterialInput },
+  components: { ModalNotification: ModalNotification },
   setup() {
     const username = ref('');
+    const router = useRouter()
+    const authStore = useAuthStore()
+
+    onMounted(() => {
+      authStore.initializeStore();
+      if (!authStore.isAuthenticated) {
+        router.push('/login');
+      }
+    });
 
     const validateUsername = (value: string): string | null => {
       if (!value) return 'Il campo non può essere vuoto.';

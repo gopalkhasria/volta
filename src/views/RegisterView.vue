@@ -31,8 +31,8 @@
 
       <div class="button-container">
         <MaterialButton
-            label="Accedi"
-            @click="handleLogin"
+            label="Registrati"
+            @click="handleRegister"
             :disabled="!isFormValid"
         />
       </div>
@@ -40,6 +40,14 @@
         Hai già un account? <router-link to="/login">Login</router-link>
       </div>
     </div>
+    <ModalNotification
+        v-if="showModal"
+        :message="modalMessage"
+        :is-error="isError"
+        :timeout="3000"
+        @close="handleModalClose"
+    />
+
   </div>
 </template>
 
@@ -47,12 +55,17 @@
 import { defineComponent, ref, computed } from 'vue';
 import MaterialInput from '../components/common/Input.vue';
 import MaterialButton from '../components/common/Button.vue';
+import ModalNotification from '../components/common/Modal.vue';
+import { url, getHeaders } from '../fetch_conf';
+import { useRouter } from 'vue-router'
+
 
 export default defineComponent({
   name: 'RegisterView',
   components: {
     MaterialInput,
-    MaterialButton
+    MaterialButton,
+    ModalNotification
   },
   setup() {
     const email = ref('');
@@ -60,6 +73,11 @@ export default defineComponent({
     const formValid = ref(false);
     const confirmPassword = ref('');
     const confirmPasswordValid = ref(false);
+
+    const showModal = ref(false);
+    const modalMessage = ref('');
+    const isError = ref(false);
+    const router = useRouter();
 
     const validateEmail = (value: string): boolean | string => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -99,9 +117,47 @@ export default defineComponent({
           confirmPasswordValid.value;
     });
 
-    const handleLogin = () => {
+    const handleRegister = async() => {
       if (email.value && password.value) {
-        console.log('Logging in with:', { email: email.value, password: password.value });
+        try {
+          const response = await fetch(`${url}send-verify-email`, {
+            method: 'POST',
+            headers: getHeaders(""),
+            body: JSON.stringify({
+              email: email.value,
+              password: password.value
+            })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            console.error('Errore:', data.error || 'Errore non specificato');
+            modalMessage.value = data.error || 'Si è verificato un errore durante l\'invio dell\'email di verifica.';
+            isError.value = true;
+            showModal.value = true;
+            return;
+          }
+          console.log('Risposta dal server:', data);
+          modalMessage.value = 'Email di verifica inviata con successo!';
+          isError.value = false;
+          showModal.value = true;
+
+        } catch (error) {
+          console.error('Errore:', error);
+          modalMessage.value = 'Si è verificato un errore durante l\'invio dell\'email di verifica.';
+          isError.value = true;
+          showModal.value = true;
+        }
+      }
+    };
+
+    const handleModalClose = () => {
+      showModal.value = false;
+      if(isError.value) {
+        email.value = '';
+        password.value = '';
+        confirmPassword.value = '';
+      }else {
+        router.push('/login');
       }
     };
 
@@ -111,10 +167,14 @@ export default defineComponent({
       isFormValid,
       validateEmail,
       handleValidation,
-      handleLogin,
+      handleRegister,
       confirmPassword,
       validateConfirmPassword,
       handleConfirmPasswordValidation,
+      showModal,
+      modalMessage,
+      isError,
+      handleModalClose,
     };
   }
 });

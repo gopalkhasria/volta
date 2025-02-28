@@ -30,6 +30,13 @@
         Non hai un account? <router-link to="/register">Registrati</router-link>
       </div>
     </div>
+    <ModalNotification
+        v-if="showModal"
+        :message="modalMessage"
+        :is-error="isError"
+        :timeout="3000"
+        @close="handleModalClose"
+    />
   </div>
 </template>
 
@@ -37,10 +44,15 @@
 import { defineComponent, ref, computed } from 'vue';
 import MaterialInput from '../components/common/Input.vue';
 import MaterialButton from '../components/common/Button.vue';
+import { useRouter } from "vue-router";
+import { url, getHeaders } from "../fetch_conf";
+import ModalNotification from "../components/common/Modal.vue";
+import { useAuthStore } from '@/stores/authStore';
 
 export default defineComponent({
   name: 'LoginPage',
   components: {
+    ModalNotification,
     MaterialInput,
     MaterialButton
   },
@@ -48,6 +60,11 @@ export default defineComponent({
     const email = ref('');
     const password = ref('');
     const formValid = ref(false);
+
+    const showModal = ref(false);
+    const modalMessage = ref('');
+    const isError = ref(false);
+    const router = useRouter();
 
     const validateEmail = (value: string): boolean | string => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,11 +85,47 @@ export default defineComponent({
       return email.value.length > 0 && password.value.length > 0 && formValid.value;
     });
 
-    const handleLogin = () => {
+    const handleLogin = async() => {
       if (email.value && password.value) {
-        console.log('Logging in with:', { email: email.value, password: password.value });
+        try {
+          const response = await fetch(`${url}login`, {
+            method: 'POST',
+            headers: getHeaders(""),
+            body: JSON.stringify({
+              email: email.value,
+              password: password.value
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            console.error('Errore:', data.error || 'Errore durante il login');
+            modalMessage.value = data.error || 'Errore durante il login';
+            isError.value = true;
+            showModal.value = true;
+            return;
+          }
+
+          console.log('Login effettuato con successo:', data);
+          const authStore = useAuthStore();
+          authStore.setUserData(data.token, email.value);
+          router.push('/');
+
+        } catch (error) {
+          console.error('Errore:', error);
+          modalMessage.value ='Errore durante il login';
+          isError.value = true;
+          showModal.value = true;
+          return;
+        }
+
       }
     };
+
+    const handleModalClose = () => {
+      showModal.value = false;
+    }
 
     return {
       email,
@@ -80,7 +133,11 @@ export default defineComponent({
       isFormValid,
       validateEmail,
       handleValidation,
-      handleLogin
+      handleLogin,
+      showModal,
+      modalMessage,
+      isError,
+      handleModalClose,
     };
   }
 });

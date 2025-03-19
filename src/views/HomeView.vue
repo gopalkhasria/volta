@@ -17,7 +17,7 @@
               <div class="button-group">
                 <MaterialButton :label="todo.completed ? 'Ripristina' : 'Completa'" @click="todos.toggleTodo(todo.id)"
                   :color="todo.completed ? 'secondary' : 'primary'" />
-                <MaterialButton label="Elimina" @click="todos.removeTodo(todo.id)" color="danger" class="delete-btn" />
+                <MaterialButton label="Elimina" @click="handleDelete(todo)" color="danger" class="delete-btn" />
               </div>
             </li>
           </ul>
@@ -35,6 +35,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useTodoStore } from "../stores/todoStore";
 import MaterialButton from "../components/common/Button.vue";
 import TodoModal from "../components/CreateTodo.vue";
+import { getHeaders, url } from '../fetch_conf';
 
 export default defineComponent({
   name: 'UserCard',
@@ -45,11 +46,16 @@ export default defineComponent({
     const router = useRouter();
     const showAddTodo = ref(false);
 
-    onMounted(() => {
+    onMounted(async () => {
       authStore.initializeStore();
       if (!authStore.isAuthenticated) {
         router.push('/login');
       }
+      const res = fetch(`${url}todos`, {
+        headers: getHeaders(authStore.token),
+      });
+      const data = await res.then((res) => res.json());
+      todos.setTodos(data);
     });
 
     const handleLogout = () => {
@@ -66,13 +72,46 @@ export default defineComponent({
       toggleShowTodo();
     };
 
-    const handleSave = () => {
-      // Placeholder for API call logic
-      console.log('Salva button clicked');
+    const handleSave = async () => {
+      todos.saveTodos();
+      const response = await fetch(`${url}todos`, {
+        method: 'POST',
+        headers: getHeaders(authStore.token),
+        body: JSON.stringify(todos.todos),
+      });
+      if (!response.ok) {
+        console.error('Error saving todos');
+      }
     };
 
-    return { authStore, todos, handleLogout, toggleShowTodo, showAddTodo, handleAddTodo, handleSave };
-  }
+    const handleDelete = async (todo: { id: string; task: string; completed: boolean }) => {
+      try {
+        const response = await fetch(`${url}delete`, {
+          method: 'POST',
+          headers: getHeaders(authStore.token),
+          body: JSON.stringify({ id: todo.id }),
+        });
+        if (response.ok) {
+          todos.removeTodo(todo.id); // Remove the todo locally after successful API call
+        } else {
+          console.error('Error deleting todo');
+        }
+      } catch (error) {
+        console.error('Error deleting todo:', error);
+      }
+    };
+
+    return {
+      authStore,
+      todos,
+      handleLogout,
+      toggleShowTodo,
+      showAddTodo,
+      handleAddTodo,
+      handleSave,
+      handleDelete,
+    };
+  },
 });
 </script>
 

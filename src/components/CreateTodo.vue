@@ -95,7 +95,7 @@ export default defineComponent({
 }
 
 .modal-content {
-  background-color: #ffffff;
+  background-color: var(--color-background-soft);;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);

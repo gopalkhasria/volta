@@ -3,29 +3,33 @@
     <div class="card">
       <div class="card-header">
         <span>{{ authStore.userEmail }}</span>
-        <FontAwesomeIcon
-            icon="sign-out-alt"
-            class="logout-icon"
-            @click="handleLogout"
-        />
+        <FontAwesomeIcon icon="sign-out-alt" class="logout-icon" @click="handleLogout" />
       </div>
       <div class="card-body">
-        <MaterialButton
-            label="Crea Todo"
-            @click="toggleShowTodo"
-        />
+        <div class="button-row">
+          <MaterialButton label="Crea Todo" @click="toggleShowTodo" />
+          <MaterialButton label="Salva" @click="handleSave" color="success" />
+        </div>
+        <div class="todo-list">
+          <ul>
+            <li v-for="todo in todos.todos" :key="todo.id" class="todo-item">
+              <span :class="{ completed: todo.completed }">{{ todo.task }}</span>
+              <div class="button-group">
+                <MaterialButton :label="todo.completed ? 'Ripristina' : 'Completa'" @click="todos.toggleTodo(todo.id)"
+                  :color="todo.completed ? 'secondary' : 'primary'" />
+                <MaterialButton label="Elimina" @click="todos.removeTodo(todo.id)" color="danger" class="delete-btn" />
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-    <TodoModal
-        v-if="showAddTodo"
-        @closeModal="toggleShowTodo"
-        @addTodo="handleAddTodo"
-    />
+    <TodoModal v-if="showAddTodo" @closeModal="toggleShowTodo" @addTodo="handleAddTodo" />
   </div>
 </template>
 
 <script lang="ts">
-import {defineComponent, onMounted, ref} from 'vue';
+import { defineComponent, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { useTodoStore } from "../stores/todoStore";
@@ -34,7 +38,7 @@ import TodoModal from "../components/CreateTodo.vue";
 
 export default defineComponent({
   name: 'UserCard',
-  components: {TodoModal, MaterialButton},
+  components: { TodoModal, MaterialButton },
   setup() {
     const authStore = useAuthStore();
     const todos = useTodoStore();
@@ -53,16 +57,21 @@ export default defineComponent({
       router.push('/login');
     };
 
-    const toggleShowTodo = () =>{
-      console.log("Ciao")
+    const toggleShowTodo = () => {
       showAddTodo.value = !showAddTodo.value;
-    }
+    };
+
     const handleAddTodo = (todo: string) => {
-      todos.addTodo(todo)
+      todos.addTodo(todo);
       toggleShowTodo();
     };
 
-    return { authStore, handleLogout, toggleShowTodo, showAddTodo, handleAddTodo};
+    const handleSave = () => {
+      // Placeholder for API call logic
+      console.log('Salva button clicked');
+    };
+
+    return { authStore, todos, handleLogout, toggleShowTodo, showAddTodo, handleAddTodo, handleSave };
   }
 });
 </script>
@@ -106,6 +115,54 @@ export default defineComponent({
 .card-body {
   padding: 1rem;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.button-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.todo-list {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.todo-list h3 {
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.todo-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-border, #eee);
+}
+
+.todo-item .completed {
+  text-decoration: line-through;
+  color: #6c757d;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  /* Add space between buttons */
+}
+
+.delete-btn {
+  background-color: #d9534f !important;
+  /* Make the button red */
+  color: white !important;
 }
 </style>
